@@ -1,7 +1,12 @@
 import { getStore } from "@netlify/blobs";
 
-// 🔑 Code organisateur (à saisir sur classement.html)
+/* 🔑 Code organisateur (à saisir sur classement.html) — insensible à la casse */
 const CODE_ORGA = "AP26";
+
+function codeOK(req) {
+  const code = new URL(req.url).searchParams.get("code") || "";
+  return code.trim().toUpperCase() === CODE_ORGA.toUpperCase();
+}
 
 export default async (req) => {
   const store = getStore({ name: "quiz-mariage", consistency: "strong" });
@@ -23,13 +28,23 @@ export default async (req) => {
   }
 
   if (req.method === "GET") {
-    const code = new URL(req.url).searchParams.get("code") || "";
-    if (code !== CODE_ORGA) return json({ error: "Code invalide" }, 401);
+    if (!codeOK(req)) return json({ error: "Code invalide" }, 401);
     const { blobs } = await store.list({ prefix: "p_" });
     const participants = [];
-    for (const b of blobs) { const v = await store.get(b.key, { type: "json" }); if (v) participants.push(v); }
+    for (const b of blobs) {
+      const v = await store.get(b.key, { type: "json" });
+      if (v) participants.push(v);
+    }
     participants.sort((a, b) => b.score - a.score || a.date.localeCompare(b.date));
     return json({ participants, count: participants.length });
   }
+
+  if (req.method === "DELETE") {
+    if (!codeOK(req)) return json({ error: "Code invalide" }, 401);
+    const { blobs } = await store.list({ prefix: "p_" });
+    for (const b of blobs) { await store.delete(b.key); }
+    return json({ ok: true, deleted: blobs.length });
+  }
+
   return json({ error: "Méthode non autorisée" }, 405);
 };
