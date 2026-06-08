@@ -10,12 +10,23 @@ function codeOK(req) {
 
 export default async (req) => {
   const store = getStore({ name: "quiz-mariage", consistency: "strong" });
+  const url = new URL(req.url);
   const json = (data, status = 200) =>
     new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 
   if (req.method === "POST") {
     let body;
     try { body = await req.json(); } catch { return json({ error: "JSON invalide" }, 400); }
+
+    // Bascule "réponses dévoilées" (organisateur uniquement)
+    if (body && body.action === "reveal") {
+      if (!codeOK(req)) return json({ error: "Code invalide" }, 401);
+      const value = !!body.value;
+      await store.setJSON("reveal", { revealed: value });
+      return json({ ok: true, revealed: value });
+    }
+
+    // Sinon : un invité envoie son score
     const prenom = String(body.prenom || "").trim().slice(0, 40);
     const nom    = String(body.nom    || "").trim().slice(0, 40);
     const score  = Math.max(0, Math.min(999, parseInt(body.score, 10) || 0));
@@ -28,6 +39,13 @@ export default async (req) => {
   }
 
   if (req.method === "GET") {
+    // Statut public : les réponses sont-elles dévoilées ? (les invités appellent ça)
+    if (url.searchParams.get("status")) {
+      let st = null;
+      try { st = await store.get("reveal", { type: "json" }); } catch (e) {}
+      return json({ revealed: !!(st && st.revealed) });
+    }
+    // Classement (organisateur)
     if (!codeOK(req)) return json({ error: "Code invalide" }, 401);
     const { blobs } = await store.list({ prefix: "p_" });
     const participants = [];
