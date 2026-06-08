@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--cream:#f6efe1;--cream-2:#efe5d2;--green:#33503b;--green-deep:#26402d;--gold:#b58b4c;--ink:#2c2820;--ink-soft:#5a5345;--shadow:0 18px 40px -22px rgba(38,34,24,.55);}
+:root{--cream:#f6efe1;--cream-2:#efe5d2;--green:#33503b;--green-deep:#26402d;--gold:#b58b4c;--ink:#2c2820;--ink-soft:#5a5345;--danger:#9c5a4a;--shadow:0 18px 40px -22px rgba(38,34,24,.55);}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:'Jost',sans-serif;color:var(--ink);background:var(--cream);
   background-image:radial-gradient(1200px 600px at 80% -10%,rgba(181,139,76,.16),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(51,80,59,.18),transparent 55%);
@@ -27,7 +27,8 @@ h1{font-family:'Cormorant Garamond',serif;font-size:46px;color:var(--green-deep)
 .btn{font-family:'Jost',sans-serif;font-size:15px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;border:none;cursor:pointer;color:var(--cream);background:var(--green);padding:15px 30px;border-radius:50px;box-shadow:var(--shadow);transition:transform .12s}
 .btn:active{transform:scale(.97)}
 .btn.ghost{background:transparent;color:var(--green);box-shadow:none;border:1.5px solid var(--green)}
-.err{color:#9c5a4a;font-size:14px;min-height:18px}
+.btn.danger{background:var(--danger);color:#fff}
+.err{color:var(--danger);font-size:14px;min-height:18px}
 .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .count{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
 .list{display:flex;flex-direction:column;gap:10px}
@@ -45,6 +46,12 @@ h1{font-family:'Cormorant Garamond',serif;font-size:46px;color:var(--green-deep)
 .empty{text-align:center;color:var(--ink-soft);padding:40px 0}
 .hidden{display:none!important}
 .tools{display:flex;gap:10px;justify-content:center;margin-top:24px}
+.danger-zone{margin-top:34px;padding-top:24px;border-top:1px dashed var(--cream-2);display:flex;flex-direction:column;align-items:center;gap:12px}
+.confirm{background:#f3e6df;border:1px solid #e6cdbf;border-radius:16px;padding:18px;max-width:400px;text-align:center}
+.confirm p{font-size:14.5px;color:#7a3f30;line-height:1.45;margin-bottom:14px}
+.confirm-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.confirm-btns .btn{padding:13px 22px;font-size:14px}
+.reset-msg{font-size:13px;color:var(--ink-soft);min-height:16px;text-align:center}
 </style>
 </head>
 <body>
@@ -55,7 +62,6 @@ h1{font-family:'Cormorant Garamond',serif;font-size:46px;color:var(--green-deep)
     <div class="ornament"><span></span><span style="font-size:18px">❦</span><span></span></div>
   </header>
 
-  <!-- saisie du code -->
   <section id="gate" class="gate">
     <p>Espace réservé à l'organisateur.<br>Saisis le code pour voir le classement.</p>
     <input id="code" type="text" inputmode="text" placeholder="Code" autocomplete="off">
@@ -63,14 +69,26 @@ h1{font-family:'Cormorant Garamond',serif;font-size:46px;color:var(--green-deep)
     <button class="btn" id="btn-load">Afficher le classement</button>
   </section>
 
-  <!-- classement -->
   <section id="board" class="hidden">
     <div class="bar">
       <span class="count" id="count">0 participant</span>
       <button class="btn ghost" id="btn-refresh">Actualiser</button>
     </div>
     <div class="list" id="list"></div>
+
     <div class="tools"><button class="btn ghost" id="btn-lock">Verrouiller</button></div>
+
+    <div class="danger-zone">
+      <button class="btn danger" id="btn-reset">Tout effacer</button>
+      <div id="confirm" class="confirm hidden">
+        <p>⚠️ Supprimer <b>définitivement tous les scores</b> du classement ?<br>Cette action est irréversible.</p>
+        <div class="confirm-btns">
+          <button class="btn ghost" id="btn-cancel">Annuler</button>
+          <button class="btn danger" id="btn-confirm">Oui, tout effacer</button>
+        </div>
+      </div>
+      <div class="reset-msg" id="reset-msg"></div>
+    </div>
   </section>
 </div>
 
@@ -124,8 +142,37 @@ document.getElementById('code').addEventListener('keydown', e=>{ if(e.key==='Ent
 document.getElementById('btn-refresh').addEventListener('click', loadBoard);
 document.getElementById('btn-lock').addEventListener('click', ()=>{
   CODE=""; document.getElementById('code').value="";
+  resetConfirmUI();
   document.getElementById('board').classList.add('hidden');
   document.getElementById('gate').classList.remove('hidden');
+});
+
+/* ---- Tout effacer : double validation ---- */
+const btnReset=document.getElementById('btn-reset');
+const confirmBox=document.getElementById('confirm');
+const resetMsg=document.getElementById('reset-msg');
+
+function resetConfirmUI(){ confirmBox.classList.add('hidden'); btnReset.classList.remove('hidden'); resetMsg.textContent=""; }
+
+btnReset.addEventListener('click', ()=>{
+  // 1re action : on demande confirmation
+  confirmBox.classList.remove('hidden');
+  btnReset.classList.add('hidden');
+  resetMsg.textContent="";
+});
+document.getElementById('btn-cancel').addEventListener('click', resetConfirmUI);
+document.getElementById('btn-confirm').addEventListener('click', async ()=>{
+  // 2e action : confirmation explicite -> suppression
+  resetMsg.textContent="Suppression en cours…";
+  try{
+    const res=await fetch(`${API}?code=${encodeURIComponent(CODE)}`, { method:"DELETE" });
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data=await res.json();
+    const n=data.deleted||0;
+    confirmBox.classList.add('hidden'); btnReset.classList.remove('hidden');
+    resetMsg.textContent=`Classement vidé (${n} participation${n>1?'s':''} supprimée${n>1?'s':''}).`;
+    loadBoard();
+  }catch(e){ resetMsg.textContent="Erreur lors de la suppression, réessaie."; }
 });
 </script>
 </body>
