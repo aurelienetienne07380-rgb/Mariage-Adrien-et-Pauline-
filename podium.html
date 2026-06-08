@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Podium — Quiz des Mariés</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#f6efe1;--gold:#c9a564;--gold-deep:#b58b4c;--green-deep:#26402d;--ink:#2c2820;--ink-soft:#cdd6cc;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:'Jost',-apple-system,sans-serif;color:var(--cream);
+  background:radial-gradient(1200px 700px at 50% -10%, #34503b, #233a29 55%, #1a2c1f 100%);
+  min-height:100dvh;overflow-x:hidden;
+}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+#confetti{position:fixed;inset:0;z-index:5;pointer-events:none}
+.wrap{position:relative;z-index:2;max-width:1100px;margin:0 auto;padding:clamp(20px,4vh,48px) 22px 40px;min-height:100dvh;display:flex;flex-direction:column}
+
+/* gate */
+.gate{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px}
+.gate input{font-family:'Jost',sans-serif;font-size:20px;letter-spacing:.2em;text-align:center;text-transform:uppercase;background:rgba(255,255,255,.08);border:1.5px solid rgba(201,165,100,.5);color:var(--cream);border-radius:14px;padding:16px 20px;width:100%;max-width:300px;outline:none}
+.gate input:focus{border-color:var(--gold)}
+.gate input::placeholder{color:rgba(246,239,225,.4)}
+.btn{font-family:'Jost',sans-serif;font-size:15px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer;color:var(--green-deep);background:var(--gold);padding:15px 32px;border-radius:50px;transition:transform .12s;box-shadow:0 14px 30px -16px rgba(0,0,0,.6)}
+.btn:active{transform:scale(.97)}
+.err{color:#e9a08c;font-size:14px;min-height:18px}
+
+/* header */
+header{text-align:center;margin-bottom:clamp(18px,4vh,40px)}
+.eyebrow{font-size:clamp(11px,1.4vw,14px);letter-spacing:.4em;text-transform:uppercase;color:var(--gold)}
+h1{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:clamp(40px,7vw,84px);line-height:.95;margin-top:6px;color:var(--cream)}
+.ornament{display:flex;align-items:center;justify-content:center;gap:14px;color:var(--gold);margin:10px auto 0}
+.ornament span{height:1px;width:60px;background:linear-gradient(90deg,transparent,var(--gold))}
+.ornament span:last-child{background:linear-gradient(90deg,var(--gold),transparent)}
+
+/* podium */
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:clamp(10px,2vw,26px);margin:0 auto;width:100%;max-width:860px}
+.col{flex:1;max-width:300px;display:flex;flex-direction:column;align-items:center;animation:rise .7s cubic-bezier(.2,.8,.2,1) both}
+.col .who{text-align:center;margin-bottom:14px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.col .crown{font-size:clamp(26px,4vw,44px);line-height:1}
+.col .name{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(20px,2.6vw,34px);color:var(--cream);line-height:1.05;max-width:14ch;overflow:hidden;text-overflow:ellipsis}
+.col .score{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:clamp(30px,5vw,60px);color:var(--gold);line-height:.9}
+.col .score small{font-size:.4em;color:var(--ink-soft);font-weight:500}
+.col .chrono{font-size:clamp(12px,1.4vw,16px);color:var(--ink-soft);letter-spacing:.05em}
+.pedestal{width:100%;border-radius:14px 14px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:14px;font-family:'Cormorant Garamond',serif;font-weight:700;color:rgba(255,255,255,.85);box-shadow:inset 0 2px 0 rgba(255,255,255,.25), 0 -8px 30px -20px rgba(0,0,0,.7);font-size:clamp(34px,6vw,72px)}
+.col.p1 .pedestal{height:clamp(150px,26vh,260px);background:linear-gradient(180deg,#e9c66b,#b58b4c)}
+.col.p2 .pedestal{height:clamp(110px,19vh,200px);background:linear-gradient(180deg,#dcdcd6,#a9a9a2)}
+.col.p3 .pedestal{height:clamp(85px,15vh,160px);background:linear-gradient(180deg,#d8a981,#b07a4e)}
+.col.p1{order:2} .col.p2{order:1} .col.p3{order:3}
+@keyframes rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+
+/* reste du classement */
+.rest{max-width:680px;margin:clamp(22px,4vh,40px) auto 0;width:100%;display:flex;flex-direction:column;gap:9px}
+.rrow{display:flex;align-items:center;gap:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:11px 18px}
+.rrow .rk{flex:0 0 30px;font-family:'Cormorant Garamond',serif;font-weight:600;font-size:22px;color:var(--gold)}
+.rrow .rn{flex:1;font-size:clamp(15px,1.8vw,19px);color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rrow .rc{font-size:13px;color:var(--ink-soft);margin-right:14px}
+.rrow .rs{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:clamp(20px,2.4vw,28px);color:var(--cream)}
+.more{text-align:center;color:var(--ink-soft);font-size:14px;margin-top:6px}
+.empty{text-align:center;color:var(--ink-soft);font-size:clamp(18px,2.5vw,26px);font-family:'Cormorant Garamond',serif;padding:8vh 0}
+
+/* footer live */
+.live{margin-top:auto;padding-top:26px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--ink-soft);font-size:13px;letter-spacing:.04em}
+.dot{width:9px;height:9px;border-radius:50%;background:#7fd29a;box-shadow:0 0 0 0 rgba(127,210,154,.6);animation:beat 1.8s infinite}
+@keyframes beat{0%{box-shadow:0 0 0 0 rgba(127,210,154,.5)}70%{box-shadow:0 0 0 10px rgba(127,210,154,0)}100%{box-shadow:0 0 0 0 rgba(127,210,154,0)}}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="wrap">
+
+  <!-- code -->
+  <section id="gate" class="gate">
+    <div class="eyebrow">Quiz des mariés</div>
+    <h1 style="font-size:clamp(34px,6vw,60px)">Podium</h1>
+    <p style="color:var(--ink-soft);max-width:32ch">Écran à projeter — saisis le code organisateur.</p>
+    <input id="code" type="text" inputmode="text" placeholder="Code" autocomplete="off">
+    <div class="err" id="err"></div>
+    <button class="btn" id="btn-load">Afficher le podium</button>
+  </section>
+
+  <!-- podium -->
+  <section id="board" class="hidden" style="display:flex;flex-direction:column;flex:1">
+    <header>
+      <div class="eyebrow">Adrien &amp; Pauline · Le quiz</div>
+      <h1>Le Podium</h1>
+      <div class="ornament"><span></span><span style="font-size:20px">❦</span><span></span></div>
+    </header>
+
+    <div class="podium" id="podium"></div>
+    <div class="rest" id="rest"></div>
+
+    <div class="live">
+      <span class="dot"></span>
+      <span id="live-text">Mise à jour automatique</span>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const API = "/.netlify/functions/quiz";
+let CODE = "";
+let lastLeader = null;
+let timer = null;
+
+const fmtDur = (ms)=>{ if(ms==null||isNaN(ms)||ms<=0) return ""; const s=Math.round(ms/1000); const m=Math.floor(s/60); return "⏱ "+m+":"+String(s%60).padStart(2,"0"); };
+const esc = (s)=> String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function fetchBoard(){
+  const err=document.getElementById('err');
+  try{
+    const res=await fetch(`${API}?code=${encodeURIComponent(CODE)}`);
+    if(res.status===401){ err.textContent="Code invalide."; return null; }
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    return await res.json();
+  }catch(e){ if(err) err.textContent="Erreur de connexion, réessaie."; return null; }
+}
+
+function podiumCol(p, rank){
+  const cls = "col p"+rank;
+  const crown = rank===1 ? "👑" : (rank===2 ? "🥈" : "🥉");
+  return `<div class="${cls}">
+    <div class="who">
+      <div class="crown">${crown}</div>
+      <div class="name">${esc(p.prenom)} ${esc(p.nom)}</div>
+      <div class="score">${p.score}<small>/${p.total}</small></div>
+      <div class="chrono">${fmtDur(p.duration)}</div>
+    </div>
+    <div class="pedestal">${rank}</div>
+  </div>`;
+}
+
+function render(parts){
+  const podium=document.getElementById('podium');
+  const rest=document.getElementById('rest');
+  if(!parts.length){
+    podium.innerHTML=''; rest.innerHTML='<div class="empty">En attente des premières participations…</div>';
+    return;
+  }
+  // confettis si le leader change (ou au tout premier affichage)
+  const leaderId = parts[0].prenom+"|"+parts[0].nom+"|"+parts[0].score;
+  if(leaderId!==lastLeader){ burst(); lastLeader=leaderId; }
+
+  const top=parts.slice(0,3);
+  podium.innerHTML = top.map((p,i)=>podiumCol(p,i+1)).join('');
+
+  const others=parts.slice(3,10);
+  rest.innerHTML = others.map((p,i)=>`
+    <div class="rrow">
+      <div class="rk">${i+4}</div>
+      <div class="rn">${esc(p.prenom)} ${esc(p.nom)}</div>
+      <div class="rc">${fmtDur(p.duration)}</div>
+      <div class="rs">${p.score}<span style="font-size:.6em;color:var(--ink-soft)">/${p.total}</span></div>
+    </div>`).join('');
+  if(parts.length>10){
+    rest.innerHTML += `<div class="more">+ ${parts.length-10} autres invité${parts.length-10>1?'s':''}</div>`;
+  }
+}
+
+async function refresh(){
+  const data=await fetchBoard();
+  if(!data) return;
+  render(data.participants||[]);
+  const n=data.count||0;
+  const now=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('live-text').textContent =
+    `Mise à jour automatique · ${n} participant${n>1?'s':''} · ${now}`;
+}
+
+document.getElementById('btn-load').addEventListener('click', async ()=>{
+  CODE=document.getElementById('code').value.trim();
+  if(!CODE){ document.getElementById('err').textContent="Saisis le code."; return; }
+  const data=await fetchBoard();
+  if(!data) return;
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('board').classList.remove('hidden');
+  render(data.participants||[]);
+  const n=data.count||0;
+  document.getElementById('live-text').textContent=`Mise à jour automatique · ${n} participant${n>1?'s':''}`;
+  if(timer) clearInterval(timer);
+  timer=setInterval(refresh, 8000);   // rafraîchissement automatique
+});
+document.getElementById('code').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('btn-load').click(); });
+
+/* ---- confettis (sans dépendance) ---- */
+const cvs=document.getElementById('confetti'), ctx=cvs.getContext('2d');
+let confetti=[], running=false;
+function resize(){ cvs.width=window.innerWidth; cvs.height=window.innerHeight; }
+window.addEventListener('resize', resize); resize();
+function burst(){
+  const colors=['#b58b4c','#e9c66b','#f6efe1','#c9a564','#8fae8f','#ffffff'];
+  for(let i=0;i<150;i++){
+    confetti.push({ x:Math.random()*cvs.width, y:-20-Math.random()*cvs.height*0.3, r:4+Math.random()*6,
+      c:colors[i%colors.length], vy:2+Math.random()*3.5, vx:-1.6+Math.random()*3.2, a:1, rot:Math.random()*6.28, vr:-0.25+Math.random()*0.5 });
+  }
+  if(!running){ running=true; loop(); }
+}
+function loop(){
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  for(const p of confetti){
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.035; p.rot+=p.vr;
+    if(p.y>cvs.height*0.6) p.a-=0.018;
+    ctx.globalAlpha=Math.max(0,p.a); ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+    ctx.fillStyle=p.c; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*0.6); ctx.restore();
+  }
+  confetti=confetti.filter(p=>p.a>0 && p.y<cvs.height+40);
+  if(confetti.length){ requestAnimationFrame(loop); } else { running=false; ctx.clearRect(0,0,cvs.width,cvs.height); }
+}
+</script>
+</body>
+</html>
