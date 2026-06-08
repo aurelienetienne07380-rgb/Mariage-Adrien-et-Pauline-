@@ -48,6 +48,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opa
 .btn.ghost{background:transparent;color:var(--green);box-shadow:none;border:1.5px solid var(--green);}
 .btn:disabled{opacity:.4;pointer-events:none}
 .note{font-size:12.5px;color:var(--ink-soft);opacity:.85;letter-spacing:.02em}
+.count-live{margin-top:2px;color:var(--gold);font-weight:500;opacity:1}
 /* identité */
 .idform{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:16px;text-align:center}
 .idform h2{font-family:'Cormorant Garamond',serif;font-size:38px;color:var(--green-deep);font-weight:600;line-height:1}
@@ -112,7 +113,8 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opa
       <p id="home-sub"></p>
       <div style="height:8px"></div>
       <button class="btn" id="btn-start">Commencer le quiz</button>
-      <p class="note">Une seule participation par personne 🤫</p>
+      <p class="note">Une seule participation · ⏱ la rapidité départage les ex æquo</p>
+      <p class="note count-live" id="home-count" style="min-height:16px"></p>
     </div>
   </section>
 
@@ -127,6 +129,7 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;opa
         <input id="in-nom" type="text" inputmode="text" autocomplete="family-name" autocapitalize="words" placeholder="Ton nom">
       </div>
       <button class="btn" id="btn-go" disabled>C'est parti</button>
+      <p class="note">⏱ Le chrono démarre dès le lancement — réponds vite, la rapidité compte !</p>
     </div>
   </section>
 
@@ -207,6 +210,7 @@ function saveState(s){ try{ localStorage.setItem(KEY, JSON.stringify(s)); }catch
 
 let cur = 0;
 let me = { prenom:"", nom:"" };
+let startTime = 0;
 const answers = new Array(CONFIG.questions.length).fill(null);
 
 function show(id){
@@ -220,12 +224,25 @@ document.getElementById('home-title').innerHTML = CONFIG.titre;
 document.getElementById('home-sub').textContent = CONFIG.sousTitre;
 document.getElementById('btn-start').addEventListener('click', ()=> show('screen-name'));
 
+/* compteur de participants en direct */
+async function loadCount(){
+  try{
+    const res=await fetch(`${API}?count=1`);
+    const d=await res.json();
+    const n=d.count||0;
+    const el=document.getElementById('home-count');
+    if(el) el.textContent = n>0 ? `🎉 ${n} invité${n>1?'s ont':' a'} déjà joué` : "Sois le premier à jouer !";
+  }catch(e){}
+}
+loadCount();
+
 /* identité */
 const inP=document.getElementById('in-prenom'), inN=document.getElementById('in-nom'), btnGo=document.getElementById('btn-go');
 function checkId(){ btnGo.disabled = !(inP.value.trim() && inN.value.trim()); }
 inP.addEventListener('input',checkId); inN.addEventListener('input',checkId);
 btnGo.addEventListener('click', ()=>{
   me.prenom = inP.value.trim(); me.nom = inN.value.trim();
+  startTime = Date.now();
   cur=0; renderQuestion(); show('screen-quiz');
 });
 
@@ -278,7 +295,8 @@ async function decideScreen(state){
 function finish(){
   const sc=scoreOf(answers);
   const id = Date.now().toString(36)+Math.random().toString(36).slice(2,8);
-  const state={ id, prenom:me.prenom, nom:me.nom, score:sc, total:CONFIG.questions.length, answers:[...answers], finished:true, sent:false };
+  const duration = startTime ? (Date.now() - startTime) : null;
+  const state={ id, prenom:me.prenom, nom:me.nom, score:sc, total:CONFIG.questions.length, duration, answers:[...answers], finished:true, sent:false };
   saveState(state);
   trySend(state);          // le score part tout de suite dans le classement
   decideScreen(state);     // écran d'attente, ou résultats si déjà dévoilé
@@ -289,7 +307,7 @@ async function trySend(state){
   if(el){ el.textContent="Envoi du score…"; el.style.background="#f0efe2"; }
   try{
     const res=await fetch(API,{ method:"POST", headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ id:state.id, prenom:state.prenom, nom:state.nom, score:state.score, total:state.total }) });
+      body:JSON.stringify({ id:state.id, prenom:state.prenom, nom:state.nom, score:state.score, total:state.total, duration:state.duration }) });
     if(!res.ok) throw new Error("HTTP "+res.status);
     state.sent=true; saveState(state);
     if(el){ el.textContent="Score envoyé au classement ✓"; el.style.background="#e3ecdf"; el.style.color="#3f6b46"; }

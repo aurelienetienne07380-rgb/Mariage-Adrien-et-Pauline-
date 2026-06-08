@@ -106,6 +106,7 @@ const API = "/.netlify/functions/quiz";
 let CODE = "";
 
 const fmtTime = (iso)=>{ try{ return new Date(iso).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}); }catch(e){ return iso; } };
+const fmtDur = (ms)=>{ if(ms==null||isNaN(ms)||ms<=0) return "—"; const s=Math.round(ms/1000); const m=Math.floor(s/60); return m+":"+String(s%60).padStart(2,"0"); };
 
 async function loadBoard(){
   const err=document.getElementById('err'); err.textContent="";
@@ -131,7 +132,7 @@ function render(parts,count){
       <div class="rank">${rank}</div>
       <div class="who">
         <div class="name">${escapeHtml(p.prenom)} ${escapeHtml(p.nom)}</div>
-        <div class="time">${fmtTime(p.date)}</div>
+        <div class="time">⏱ ${fmtDur(p.duration)}</div>
       </div>
       <div class="sc"><b>${p.score}</b><small>/ ${p.total}</small></div>`;
     list.appendChild(row);
